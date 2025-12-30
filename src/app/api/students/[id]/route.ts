@@ -14,6 +14,7 @@ import { query } from '@/lib/db';
 import { ApiResponse, Student } from '@/lib/types';
 
 interface StudentWithDetails extends Student {
+    room_id?: number;
     room_number?: string;
     hostel_name?: string;
     allocation_date?: Date;
@@ -42,6 +43,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
         const result = await query<StudentWithDetails>(`
             SELECT 
               s.*,
+              r.id as room_id,
               r.room_number,
               h.name as hostel_name,
               a.allocation_date,

@@ -59,8 +59,8 @@ export default function AdminDashboard() {
 
     const menuItems = [
         { href: '/admin/students', icon: '👥', title: 'Students', description: 'Add and manage students' },
-        { href: '/admin/rooms', icon: '🏠', title: 'Rooms', description: 'Manage room inventory' },
-        { href: '/admin/allocations', icon: '🔑', title: 'Allocations', description: 'Room assignments' },
+        { href: '/admin/rooms', icon: '🏠', title: 'Rooms', description: 'Manage rooms & assignments' },
+        { href: '/admin/allocations', icon: '🔑', title: 'Allocations', description: 'Allocation history' },
         { href: '/admin/complaints', icon: '🔧', title: 'Complaints', description: 'Maintenance requests' },
         { href: '/admin/payments', icon: '💳', title: 'Payments', description: 'Fee tracking' },
         { href: '/admin/analytics', icon: '📊', title: 'Analytics', description: 'Reports & insights' }

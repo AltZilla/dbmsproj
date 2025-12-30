@@ -199,18 +199,14 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
         }
 
         // Deactivate the allocation
+        // NOTE: Room occupancy is automatically updated by the database trigger 'trg_check_room_capacity'
+        // when is_active changes from TRUE to FALSE
         const result = await query<Allocation>(
             `UPDATE allocations 
              SET is_active = FALSE, actual_checkout = CURRENT_DATE
              WHERE id = $1
              RETURNING *`,
             [allocationId]
-        );
-
-        // Decrease room occupancy
-        await query(
-            'UPDATE rooms SET current_occupancy = GREATEST(0, current_occupancy - 1) WHERE id = $1',
-            [existing.room_id]
         );
 
         return NextResponse.json({

@@ -95,6 +95,13 @@ function ComplaintsContent() {
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
+
+        // Check if student has a room assigned
+        if (!roomId) {
+            setMessage({ type: 'error', text: 'You must be assigned to a room before raising a complaint. Please contact the hostel administrator.' });
+            return;
+        }
+
         try {
             const res = await fetch('/api/complaints', {
                 method: 'POST',

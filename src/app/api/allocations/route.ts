@@ -204,18 +204,13 @@ export async function POST(request: NextRequest) {
         }
 
         // Create the allocation
+        // NOTE: Room occupancy is automatically updated by the database trigger 'trg_check_room_capacity'
         const result = await query<Allocation>(
             `INSERT INTO allocations (
               student_id, room_id, allocation_date, expected_checkout, notes, is_active
             ) VALUES ($1, $2, CURRENT_DATE, $3, $4, TRUE)
             RETURNING *`,
             [student_id, room_id, expected_checkout || null, notes || null]
-        );
-
-        // Update room occupancy
-        await query(
-            'UPDATE rooms SET current_occupancy = current_occupancy + 1 WHERE id = $1',
-            [room_id]
         );
 
         return NextResponse.json(
