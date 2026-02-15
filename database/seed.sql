@@ -1,22 +1,11 @@
--- ============================================================================
--- SMART HOSTEL MANAGEMENT SYSTEM - SEED DATA
--- ============================================================================
--- This file contains sample data for testing the application.
--- Run this after schema.sql, triggers.sql, and views.sql
--- ============================================================================
-
--- ============================================================================
 -- HOSTELS
--- ============================================================================
 INSERT INTO hostels (name, address, gender_allowed, warden_name, warden_contact) VALUES
 ('Alpha Hostel', '123 University Road, Block A', 'male', 'Dr. Rajesh Kumar', '+91-9876543210'),
 ('Beta Hostel', '124 University Road, Block B', 'male', 'Mr. Suresh Sharma', '+91-9876543211'),
 ('Gamma Hostel', '125 University Road, Block C', 'female', 'Dr. Priya Singh', '+91-9876543212'),
 ('Delta Hostel', '126 University Road, Block D', 'female', 'Mrs. Anjali Verma', '+91-9876543213');
 
--- ============================================================================
 -- ROOMS
--- ============================================================================
 -- Alpha Hostel (id=1) - Male
 INSERT INTO rooms (hostel_id, room_number, floor, room_type, capacity, rent_amount, has_ac, has_attached_bathroom) VALUES
 (1, 'A-101', 1, 'double', 2, 5000.00, FALSE, FALSE),
@@ -49,9 +38,7 @@ INSERT INTO rooms (hostel_id, room_number, floor, room_type, capacity, rent_amou
 (4, 'D-201', 2, 'triple', 3, 4500.00, FALSE, FALSE),
 (4, 'D-202', 2, 'double', 2, 6000.00, TRUE, FALSE);
 
--- ============================================================================
 -- STUDENTS
--- ============================================================================
 INSERT INTO students (registration_number, first_name, last_name, email, phone, gender, date_of_birth, address, guardian_name, guardian_phone, department, year_of_study) VALUES
 ('REG001', 'Amit', 'Patel', 'amit.patel@university.edu', '+91-9123456701', 'male', '2002-03-15', '45 Gandhi Nagar, Mumbai', 'Ramesh Patel', '+91-9123456901', 'Computer Science', 2),
 ('REG002', 'Rahul', 'Sharma', 'rahul.sharma@university.edu', '+91-9123456702', 'male', '2001-07-22', '12 Nehru Street, Delhi', 'Sunil Sharma', '+91-9123456902', 'Electronics', 3),
@@ -64,25 +51,20 @@ INSERT INTO students (registration_number, first_name, last_name, email, phone, 
 ('REG009', 'Kavya', 'Nair', 'kavya.nair@university.edu', '+91-9123456709', 'female', '2002-09-30', '45 Marine Drive, Kochi', 'Gopal Nair', '+91-9123456909', 'Computer Science', 2),
 ('REG010', 'Pooja', 'Joshi', 'pooja.joshi@university.edu', '+91-9123456710', 'female', '2003-06-12', '12 Aundh Road, Pune', 'Harish Joshi', '+91-9123456910', 'Civil', 1);
 
--- ============================================================================
 -- ALLOCATIONS
--- ============================================================================
--- Note: The trigger will automatically update room occupancy
 INSERT INTO allocations (student_id, room_id, allocation_date, expected_checkout) VALUES
-(1, 1, '2024-07-01', '2025-05-31'),  -- Amit -> A-101
-(2, 1, '2024-07-01', '2025-05-31'),  -- Rahul -> A-101 (roommate)
-(3, 2, '2024-07-01', '2025-05-31'),  -- Vikram -> A-102
-(4, 12, '2024-07-01', '2025-05-31'), -- Priya -> C-101
-(5, 12, '2024-07-01', '2025-05-31'), -- Sneha -> C-101 (roommate)
-(6, 13, '2024-07-01', '2025-05-31'), -- Ananya -> C-102
-(7, 3, '2024-07-01', '2025-05-31'),  -- Arjun -> A-103
-(8, 3, '2024-07-01', '2025-05-31'),  -- Rohit -> A-103 (roommate)
-(9, 15, '2024-07-01', '2025-05-31'), -- Kavya -> C-201
-(10, 17, '2024-07-01', '2025-05-31'); -- Pooja -> D-101
+(1, 1, '2024-07-01', '2025-05-31'),
+(2, 1, '2024-07-01', '2025-05-31'),
+(3, 2, '2024-07-01', '2025-05-31'),
+(4, 12, '2024-07-01', '2025-05-31'),
+(5, 12, '2024-07-01', '2025-05-31'),
+(6, 13, '2024-07-01', '2025-05-31'),
+(7, 3, '2024-07-01', '2025-05-31'),
+(8, 3, '2024-07-01', '2025-05-31'),
+(9, 15, '2024-07-01', '2025-05-31'),
+(10, 17, '2024-07-01', '2025-05-31');
 
--- ============================================================================
 -- MAINTENANCE STAFF
--- ============================================================================
 INSERT INTO maintenance_staff (name, email, phone, specialization, is_available, hostel_id) VALUES
 ('Mohan Electrician', 'mohan@university.edu', '+91-9234567801', 'electrical', TRUE, 1),
 ('Suresh Plumber', 'suresh@university.edu', '+91-9234567802', 'plumbing', TRUE, 1),
@@ -91,9 +73,7 @@ INSERT INTO maintenance_staff (name, email, phone, specialization, is_available,
 ('Vijay Technician', 'vijay@university.edu', '+91-9234567805', 'internet', TRUE, NULL),
 ('Prakash Pest Control', 'prakash@university.edu', '+91-9234567806', 'pest_control', TRUE, NULL);
 
--- ============================================================================
--- COMPLAINTS (with various statuses for analytics)
--- ============================================================================
+-- COMPLAINTS
 -- Open complaints
 INSERT INTO complaints (student_id, room_id, category, title, description, status, priority, created_at) VALUES
 (1, 1, 'electrical', 'Tube light not working', 'The tube light in the study area is flickering and needs replacement.', 'open', 2, NOW() - INTERVAL '2 days'),
@@ -110,7 +90,7 @@ INSERT INTO complaints (student_id, room_id, category, title, description, statu
 (3, 2, 'electrical', 'Fan making noise', 'Ceiling fan is making a grinding noise when running.', 'in_progress', 3, 1, NOW() - INTERVAL '2 days', NOW() - INTERVAL '4 days'),
 (6, 13, 'plumbing', 'Low water pressure', 'Water pressure in the shower is very low.', 'in_progress', 2, 2, NOW() - INTERVAL '1 day', NOW() - INTERVAL '3 days');
 
--- Resolved complaints (for analytics)
+-- Resolved complaints
 INSERT INTO complaints (student_id, room_id, category, title, description, status, priority, assigned_staff_id, resolution_notes, assigned_at, resolved_at, created_at) VALUES
 (8, 3, 'electrical', 'Power outlet not working', 'One power outlet near the window stopped working.', 'resolved', 2, 1, 'Replaced faulty wiring and outlet.', NOW() - INTERVAL '10 days', NOW() - INTERVAL '8 days', NOW() - INTERVAL '12 days'),
 (9, 15, 'pest_control', 'Cockroach problem', 'Seeing cockroaches in the room frequently.', 'resolved', 1, 6, 'Applied pest control treatment. Follow-up in 2 weeks.', NOW() - INTERVAL '20 days', NOW() - INTERVAL '18 days', NOW() - INTERVAL '21 days'),
@@ -123,9 +103,7 @@ INSERT INTO complaints (student_id, room_id, category, title, description, statu
 (2, 1, 'security', 'Lock needs replacement', 'Room door lock is difficult to open.', 'closed', 2, 3, 'Replaced entire lock mechanism.', NOW() - INTERVAL '35 days', NOW() - INTERVAL '33 days', NOW() - INTERVAL '30 days', NOW() - INTERVAL '37 days'),
 (5, 12, 'electrical', 'Switch spark issue', 'Main switch sparks when turned on.', 'closed', 1, 1, 'Replaced switch and checked wiring. Safe now.', NOW() - INTERVAL '40 days', NOW() - INTERVAL '38 days', NOW() - INTERVAL '35 days', NOW() - INTERVAL '42 days');
 
--- ============================================================================
 -- PAYMENTS
--- ============================================================================
 -- Paid payments
 INSERT INTO payments (student_id, allocation_id, amount, payment_date, due_date, payment_status, payment_method, transaction_id, receipt_number, semester) VALUES
 (1, 1, 5000.00, '2024-07-15', '2024-07-31', 'paid', 'bank_transfer', 'TXN001234567', 'RCP-2024-001', 'Fall 2024'),
@@ -139,7 +117,7 @@ INSERT INTO payments (student_id, allocation_id, amount, payment_date, due_date,
 (9, 9, 8500.00, '2024-07-21', '2024-07-31', 'paid', 'card', 'TXN001234574', 'RCP-2024-009', 'Fall 2024'),
 (10, 10, 5000.00, '2024-07-24', '2024-07-31', 'paid', 'bank_transfer', 'TXN001234575', 'RCP-2024-010', 'Fall 2024');
 
--- Pending payments (current semester)
+-- Pending payments
 INSERT INTO payments (student_id, allocation_id, amount, due_date, payment_status, semester) VALUES
 (1, 1, 5000.00, '2025-01-15', 'pending', 'Spring 2025'),
 (2, 2, 5000.00, '2025-01-15', 'pending', 'Spring 2025'),
@@ -155,16 +133,3 @@ INSERT INTO payments (student_id, allocation_id, amount, due_date, payment_statu
 -- Partial payment
 INSERT INTO payments (student_id, allocation_id, amount, payment_date, due_date, payment_status, payment_method, notes, semester) VALUES
 (8, 8, 2000.00, '2024-12-28', '2024-12-31', 'partial', 'upi', 'Partial payment received. Balance: Rs 2500', 'Spring 2025');
-
--- ============================================================================
--- VERIFY DATA
--- ============================================================================
--- Uncomment to verify the seed data was inserted correctly
-
--- SELECT 'Hostels' as entity, COUNT(*) as count FROM hostels
--- UNION ALL SELECT 'Rooms', COUNT(*) FROM rooms
--- UNION ALL SELECT 'Students', COUNT(*) FROM students
--- UNION ALL SELECT 'Allocations', COUNT(*) FROM allocations
--- UNION ALL SELECT 'Maintenance Staff', COUNT(*) FROM maintenance_staff
--- UNION ALL SELECT 'Complaints', COUNT(*) FROM complaints
--- UNION ALL SELECT 'Payments', COUNT(*) FROM payments;

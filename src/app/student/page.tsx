@@ -33,7 +33,6 @@ function StudentPortalContent() {
     const [students, setStudents] = useState<Array<{ id: number; name: string }>>([]);
 
     useEffect(() => {
-        // Fetch list of students for demo selection
         async function fetchStudents() {
             try {
                 const res = await fetch('/api/students?limit=50');
@@ -44,7 +43,6 @@ function StudentPortalContent() {
                         name: `${s.first_name} ${s.last_name}`
                     })));
 
-                    // Only auto-select first student if no ID in URL
                     if (!urlId) {
                         setSelectedStudentId(data.data[0].id);
                     }

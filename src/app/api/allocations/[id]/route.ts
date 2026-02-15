@@ -22,8 +22,6 @@ interface Allocation {
     actual_checkout: Date | null;
     is_active: boolean;
     notes: string | null;
-    created_at: Date;
-    updated_at: Date;
     student_name?: string;
     registration_number?: string;
     room_number?: string;

@@ -104,6 +104,7 @@ export async function POST(request: NextRequest) {
         const {
             hostel_id,
             room_number,
+            room_sequence,
             floor,
             room_type,
             capacity,
@@ -112,9 +113,9 @@ export async function POST(request: NextRequest) {
             has_attached_bathroom
         } = body;
 
-        if (!hostel_id || !room_number || floor === undefined || !capacity || !rent_amount) {
+        if (!hostel_id || (!room_number && !room_sequence) || floor === undefined || !capacity || !rent_amount) {
             return NextResponse.json(
-                { success: false, error: 'Missing required fields: hostel_id, room_number, floor, capacity, rent_amount' },
+                { success: false, error: 'Missing required fields. Provide at least hostel_id, floor, capacity, rent_amount, and either room_number or room_sequence.' },
                 { status: 400 }
             );
         }
@@ -127,16 +128,21 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Use provided room_number or a placeholder if using sequence (trigger will generating actual number)
+        // Note: BEFORE INSERT trigger will overwrite room_number if room_sequence is present.
+        const roomNumberToInsert = room_number || `PENDING-${Math.random().toString(36).substring(7)}`;
+
         const result = await query<Room>(
             `INSERT INTO rooms (
-              hostel_id, room_number, floor, room_type, capacity,
+              hostel_id, room_number, floor, room_sequence, room_type, capacity,
               rent_amount, has_ac, has_attached_bathroom
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING *`,
             [
                 hostel_id,
-                room_number,
+                roomNumberToInsert,
                 floor,
+                room_sequence || null,
                 room_type || 'double',
                 capacity,
                 rent_amount,

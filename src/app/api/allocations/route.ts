@@ -21,8 +21,6 @@ interface Allocation {
     actual_checkout: Date | null;
     is_active: boolean;
     notes: string | null;
-    created_at: Date;
-    updated_at: Date;
     // Joined fields
     student_name?: string;
     registration_number?: string;
@@ -30,9 +28,6 @@ interface Allocation {
     hostel_name?: string;
 }
 
-/**
- * GET /api/allocations
- */
 export async function GET(request: NextRequest) {
     try {
         const searchParams = request.nextUrl.searchParams;
@@ -117,14 +112,6 @@ export async function GET(request: NextRequest) {
     }
 }
 
-/**
- * POST /api/allocations
- * 
- * Creates a new room allocation for a student.
- * The database trigger will automatically:
- * - Update the room's current_occupancy
- * - Deactivate previous allocations for the student
- */
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
@@ -137,7 +124,6 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Verify student exists and is active
         const studentCheck = await query(
             'SELECT id, gender FROM students WHERE id = $1 AND is_active = TRUE',
             [student_id]
@@ -149,7 +135,6 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Verify room exists and has capacity
         const roomCheck = await query<{
             id: number;
             capacity: number;

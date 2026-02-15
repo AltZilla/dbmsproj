@@ -18,7 +18,9 @@ import { ApiResponse, Hostel } from '@/lib/types';
 export async function GET() {
     try {
         const result = await query<Hostel>(
-            `SELECT * FROM hostels ORDER BY name`
+            `SELECT h.*,
+                (SELECT COUNT(*) FROM rooms WHERE hostel_id = h.id) as total_rooms
+             FROM hostels h ORDER BY h.name`
         );
 
         return NextResponse.json<ApiResponse<Hostel[]>>({

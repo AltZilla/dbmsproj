@@ -52,9 +52,6 @@ export async function PUT(
             );
         }
 
-        // Add updated_at timestamp
-        updates.push(`updated_at = NOW()`);
-
         // Add the payment ID as the last parameter
         values.push(paymentId);
 

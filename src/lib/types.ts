@@ -33,11 +33,9 @@ export interface Hostel {
     name: string;
     address: string | null;
     gender_allowed: 'male' | 'female' | 'other';
-    total_rooms: number;
     warden_name: string | null;
     warden_contact: string | null;
     created_at: Date;
-    updated_at: Date;
 }
 
 export interface Room {
@@ -45,6 +43,7 @@ export interface Room {
     hostel_id: number;
     room_number: string;
     floor: number;
+    room_sequence?: number;
     room_type: 'single' | 'double' | 'triple' | 'dormitory';
     capacity: number;
     current_occupancy: number;
@@ -53,7 +52,6 @@ export interface Room {
     has_attached_bathroom: boolean;
     is_available: boolean;
     created_at: Date;
-    updated_at: Date;
     // Joined fields
     hostel_name?: string;
 }
@@ -74,7 +72,6 @@ export interface Student {
     year_of_study: number | null;
     is_active: boolean;
     created_at: Date;
-    updated_at: Date;
 }
 
 export interface Allocation {
@@ -86,8 +83,6 @@ export interface Allocation {
     actual_checkout: Date | null;
     is_active: boolean;
     notes: string | null;
-    created_at: Date;
-    updated_at: Date;
     // Joined fields
     student_name?: string;
     room_number?: string;
@@ -102,8 +97,6 @@ export interface MaintenanceStaff {
     specialization: string | null;
     is_available: boolean;
     hostel_id: number | null;
-    created_at: Date;
-    updated_at: Date;
 }
 
 export interface Complaint {
@@ -117,11 +110,10 @@ export interface Complaint {
     priority: number;
     assigned_staff_id: number | null;
     resolution_notes: string | null;
-    created_at: Date;
     assigned_at: Date | null;
     resolved_at: Date | null;
     closed_at: Date | null;
-    updated_at: Date;
+    created_at: Date;
     // Joined fields
     student_name?: string;
     room_number?: string;
@@ -143,7 +135,6 @@ export interface Payment {
     semester: string | null;
     notes: string | null;
     created_at: Date;
-    updated_at: Date;
     // Joined fields
     student_name?: string;
 }
