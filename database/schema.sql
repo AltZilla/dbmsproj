@@ -150,7 +150,6 @@ CREATE TABLE complaints (
     status complaint_status DEFAULT 'open',
     priority INTEGER DEFAULT 3 CHECK (priority >= 1 AND priority <= 5),
     assigned_staff_id INTEGER,
-    resolution_notes TEXT,
     assigned_at TIMESTAMP,
     resolved_at TIMESTAMP,
     closed_at TIMESTAMP,

@@ -86,11 +86,7 @@ BEGIN
             OLD.status,
             NEW.status,
             COALESCE(current_setting('app.current_user', TRUE), 'system'),
-            CASE 
-                WHEN NEW.status = 'assigned' THEN 'Assigned to staff ID: ' || COALESCE(NEW.assigned_staff_id::TEXT, 'N/A')
-                WHEN NEW.status = 'resolved' THEN 'Resolution: ' || COALESCE(NEW.resolution_notes, 'No notes')
-                ELSE NULL
-            END,
+            NULL,
             CURRENT_TIMESTAMP
         );
         

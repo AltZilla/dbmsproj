@@ -217,6 +217,10 @@ class ApiService {
     return data['success'] == true;
   }
 
+  Future<Map<String, dynamic>> getComplaintDetail(int id) async {
+    return await _get('/api/complaints/$id');
+  }
+
   Future<Map<String, dynamic>> updateComplaint(
       int id, Map<String, dynamic> updates) async {
     return await _put('/api/complaints/$id', updates);

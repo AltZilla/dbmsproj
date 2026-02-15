@@ -202,11 +202,40 @@ class _AdminPaymentsScreenState extends State<AdminPaymentsScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  TextFormField(
-                    controller: dueDateCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Due Date',
-                      hintText: 'YYYY-MM-DD',
+                  GestureDetector(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: ctx2,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                        builder: (context, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: const ColorScheme.light(
+                                primary: AppTheme.primary600,
+                              ),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (picked != null) {
+                        setModalState(() {
+                          dueDateCtrl.text =
+                              '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+                        });
+                      }
+                    },
+                    child: AbsorbPointer(
+                      child: TextFormField(
+                        controller: dueDateCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Due Date',
+                          hintText: 'Select date',
+                          suffixIcon: Icon(Icons.calendar_today, size: 20),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 14),

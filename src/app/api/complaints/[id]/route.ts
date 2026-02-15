@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { query, getClient } from '@/lib/db';
 import { ApiResponse, Complaint } from '@/lib/types';
 
 interface ComplaintLog {
@@ -114,7 +114,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         }
 
         const body = await request.json();
-        const { status, assigned_staff_id, resolution_notes, priority } = body;
+        const { status, assigned_staff_id, priority, admin_note } = body;
 
         // Check if complaint exists
         const existingResult = await query<Complaint>(
@@ -132,7 +132,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         const existing = existingResult.rows[0];
 
         // Validate status transition
-        const validStatuses = ['open', 'assigned', 'in_progress', 'resolved', 'closed'];
+        const validStatuses = ['open', 'in_progress', 'resolved', 'closed'];
         if (status && !validStatuses.includes(status)) {
             return NextResponse.json(
                 { success: false, error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
@@ -149,13 +149,6 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         if (status && status !== existing.status) {
             updates.push(`status = $${paramIndex++}`);
             params.push(status);
-
-            if (status === 'assigned' && !assigned_staff_id && !existing.assigned_staff_id) {
-                return NextResponse.json(
-                    { success: false, error: 'Cannot set status to assigned without assigning staff' },
-                    { status: 400 }
-                );
-            }
         }
 
         // Handle staff assignment
@@ -175,18 +168,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 
             updates.push(`assigned_staff_id = $${paramIndex++}`);
             params.push(assigned_staff_id);
-
-            if (assigned_staff_id && existing.status === 'open' && !status) {
-                updates.push(`status = $${paramIndex++}`);
-                params.push('assigned');
-            }
         }
 
-        // Handle resolution notes
-        if (resolution_notes !== undefined) {
-            updates.push(`resolution_notes = $${paramIndex++}`);
-            params.push(resolution_notes);
-        }
+
 
         // Handle priority change
         if (priority !== undefined) {
@@ -200,7 +184,11 @@ export async function PUT(request: NextRequest, context: RouteContext) {
             params.push(priority);
         }
 
-        if (updates.length === 0) {
+        // If no complaint field changes but admin_note is provided, we still proceed
+        const hasFieldUpdates = updates.length > 0;
+        const hasAdminNote = admin_note && admin_note.trim();
+
+        if (!hasFieldUpdates && !hasAdminNote) {
             return NextResponse.json(
                 { success: false, error: 'No fields to update' },
                 { status: 400 }
@@ -209,19 +197,60 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 
         params.push(complaintId);
 
-        const result = await query<Complaint>(
-            `UPDATE complaints 
-             SET ${updates.join(', ')}
-             WHERE id = $${paramIndex}
-             RETURNING *`,
-            params
-        );
+        const client = await getClient();
+        try {
+            await client.query('BEGIN');
 
-        return NextResponse.json({
-            success: true,
-            data: result.rows[0],
-            message: 'Complaint updated successfully'
-        });
+            let resultRow = existing;
+
+            // Update complaint fields if any changed
+            if (hasFieldUpdates) {
+                const result = await client.query<Complaint>(
+                    `UPDATE complaints 
+                     SET ${updates.join(', ')}
+                     WHERE id = $${paramIndex}
+                     RETURNING *`,
+                    params
+                );
+                resultRow = result.rows[0];
+            }
+
+            // Handle admin note in complaint_logs
+            if (hasAdminNote) {
+                const statusChanged = status && status !== existing.status;
+                if (statusChanged && hasFieldUpdates) {
+                    // Status changed — trigger already created a log entry on this connection.
+                    // Update that entry with the admin note instead of creating a duplicate.
+                    await client.query(
+                        `UPDATE complaint_logs
+                         SET notes = $1, changed_by = 'admin'
+                         WHERE complaint_id = $2
+                           AND changed_at = (SELECT MAX(changed_at) FROM complaint_logs WHERE complaint_id = $2)`,
+                        [admin_note.trim(), complaintId]
+                    );
+                } else {
+                    // No status change — insert a standalone note entry.
+                    await client.query(
+                        `INSERT INTO complaint_logs (complaint_id, old_status, new_status, changed_by, notes, changed_at)
+                         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
+                        [complaintId, existing.status, existing.status, 'admin', admin_note.trim()]
+                    );
+                }
+            }
+
+            await client.query('COMMIT');
+
+            return NextResponse.json({
+                success: true,
+                data: resultRow,
+                message: 'Complaint updated successfully'
+            });
+        } catch (txError) {
+            await client.query('ROLLBACK');
+            throw txError;
+        } finally {
+            client.release();
+        }
     } catch (error) {
         console.error('Complaint detail API error:', error);
         return NextResponse.json(

@@ -109,7 +109,6 @@ export interface Complaint {
     status: 'open' | 'assigned' | 'in_progress' | 'resolved' | 'closed';
     priority: number;
     assigned_staff_id: number | null;
-    resolution_notes: string | null;
     assigned_at: Date | null;
     resolved_at: Date | null;
     closed_at: Date | null;

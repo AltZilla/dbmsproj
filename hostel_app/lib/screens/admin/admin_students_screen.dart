@@ -588,8 +588,7 @@ class _StudentFormModalState extends State<_StudentFormModal> {
                     'female',
                     'other',
                   ]),
-                  _buildField('Date of Birth', 'date_of_birth',
-                      hint: 'YYYY-MM-DD'),
+                  _buildDatePicker('Date of Birth', 'date_of_birth'),
                   _buildField('Guardian Name', 'guardian_name'),
                   _buildField('Guardian Phone', 'guardian_phone',
                       type: TextInputType.phone),
@@ -648,6 +647,53 @@ class _StudentFormModalState extends State<_StudentFormModal> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildDatePicker(String label, String key) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: GestureDetector(
+        onTap: () async {
+          DateTime initial = DateTime(2002, 1, 1);
+          if (_data[key] != null && _data[key]!.isNotEmpty) {
+            final parsed = DateTime.tryParse(_data[key]!);
+            if (parsed != null) initial = parsed;
+          }
+          final picked = await showDatePicker(
+            context: context,
+            initialDate: initial,
+            firstDate: DateTime(1990),
+            lastDate: DateTime.now(),
+            builder: (context, child) {
+              return Theme(
+                data: Theme.of(context).copyWith(
+                  colorScheme: const ColorScheme.light(
+                    primary: AppTheme.primary600,
+                  ),
+                ),
+                child: child!,
+              );
+            },
+          );
+          if (picked != null) {
+            setState(() {
+              _data[key] =
+                  '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+            });
+          }
+        },
+        child: AbsorbPointer(
+          child: TextFormField(
+            controller: TextEditingController(text: _data[key]),
+            decoration: InputDecoration(
+              labelText: label,
+              hintText: 'Select date',
+              suffixIcon: const Icon(Icons.calendar_today, size: 20),
+            ),
+          ),
+        ),
       ),
     );
   }
