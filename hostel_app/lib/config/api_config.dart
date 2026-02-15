@@ -7,9 +7,9 @@ class ApiConfig {
   // For production, use your deployed Next.js URL
   
   // const String baseUrl = 'http://localhost:3000'; // Android emulator
-  static const String baseUrl = 'http://localhost:3000'; // iOS simulator / Web
+  // static const String baseUrl = 'http://localhost:3000'; // iOS simulator / Web
   // static const String baseUrl = 'http://192.168.x.x:3000'; // Physical device - replace with your IP
-  // const String baseUrl = 'https://dbmsproj-xi.vercel.app'; // Production
+  static const String baseUrl = 'https://dbmsproj-xi.vercel.app'; // Production
   
   static const Duration timeout = Duration(seconds: 30);
 }

@@ -1,3 +1,6 @@
+-- CLEAR EXISTING DATA
+TRUNCATE TABLE hostels, rooms, students, allocations, maintenance_staff, complaints, complaint_logs, payments RESTART IDENTITY CASCADE;
+
 -- HOSTELS
 INSERT INTO hostels (name, address, gender_allowed, warden_name, warden_contact) VALUES
 ('Alpha Hostel', '123 University Road, Block A', 'male', 'Dr. Rajesh Kumar', '+91-9876543210'),
@@ -6,37 +9,41 @@ INSERT INTO hostels (name, address, gender_allowed, warden_name, warden_contact)
 ('Delta Hostel', '126 University Road, Block D', 'female', 'Mrs. Anjali Verma', '+91-9876543213');
 
 -- ROOMS
+-- Use room_sequence which triggers auto-generation of room_number.
+-- We provide a placeholder 'GEN' for room_number to satisfy NOT NULL constraint, 
+-- but the trigger will overwrite it with the correct format (e.g. A-101)
+
 -- Alpha Hostel (id=1) - Male
-INSERT INTO rooms (hostel_id, room_number, floor, room_type, capacity, rent_amount, has_ac, has_attached_bathroom) VALUES
-(1, 'A-101', 1, 'double', 2, 5000.00, FALSE, FALSE),
-(1, 'A-102', 1, 'double', 2, 5000.00, FALSE, FALSE),
-(1, 'A-103', 1, 'triple', 3, 4500.00, FALSE, FALSE),
-(1, 'A-201', 2, 'single', 1, 8000.00, TRUE, TRUE),
-(1, 'A-202', 2, 'double', 2, 6000.00, TRUE, FALSE),
-(1, 'A-203', 2, 'double', 2, 6000.00, TRUE, FALSE);
+INSERT INTO rooms (hostel_id, room_number, room_sequence, floor, room_type, capacity, rent_amount, has_ac, has_attached_bathroom) VALUES
+(1, 'A-101', 1, 1, 'double', 2, 5000.00, FALSE, FALSE),
+(1, 'A-102', 2, 1, 'double', 2, 5000.00, FALSE, FALSE),
+(1, 'A-103', 3, 1, 'triple', 3, 4500.00, FALSE, FALSE),
+(1, 'A-201', 1, 2, 'single', 1, 8000.00, TRUE, TRUE),
+(1, 'A-202', 2, 2, 'double', 2, 6000.00, TRUE, FALSE),
+(1, 'A-203', 3, 2, 'double', 2, 6000.00, TRUE, FALSE);
 
 -- Beta Hostel (id=2) - Male
-INSERT INTO rooms (hostel_id, room_number, floor, room_type, capacity, rent_amount, has_ac, has_attached_bathroom) VALUES
-(2, 'B-101', 1, 'triple', 3, 4000.00, FALSE, FALSE),
-(2, 'B-102', 1, 'triple', 3, 4000.00, FALSE, FALSE),
-(2, 'B-201', 2, 'double', 2, 5500.00, TRUE, FALSE),
-(2, 'B-202', 2, 'double', 2, 5500.00, TRUE, FALSE),
-(2, 'B-301', 3, 'single', 1, 7500.00, TRUE, TRUE);
+INSERT INTO rooms (hostel_id, room_number, room_sequence, floor, room_type, capacity, rent_amount, has_ac, has_attached_bathroom) VALUES
+(2, 'B-101', 1, 1, 'triple', 3, 4000.00, FALSE, FALSE),
+(2, 'B-102', 2, 1, 'triple', 3, 4000.00, FALSE, FALSE),
+(2, 'B-201', 1, 2, 'double', 2, 5500.00, TRUE, FALSE),
+(2, 'B-202', 2, 2, 'double', 2, 5500.00, TRUE, FALSE),
+(2, 'B-301', 1, 3, 'single', 1, 7500.00, TRUE, TRUE);
 
 -- Gamma Hostel (id=3) - Female
-INSERT INTO rooms (hostel_id, room_number, floor, room_type, capacity, rent_amount, has_ac, has_attached_bathroom) VALUES
-(3, 'C-101', 1, 'double', 2, 5500.00, FALSE, TRUE),
-(3, 'C-102', 1, 'double', 2, 5500.00, FALSE, TRUE),
-(3, 'C-103', 1, 'triple', 3, 4800.00, FALSE, FALSE),
-(3, 'C-201', 2, 'single', 1, 8500.00, TRUE, TRUE),
-(3, 'C-202', 2, 'double', 2, 6500.00, TRUE, TRUE);
+INSERT INTO rooms (hostel_id, room_number, room_sequence, floor, room_type, capacity, rent_amount, has_ac, has_attached_bathroom) VALUES
+(3, 'C-101', 1, 1, 'double', 2, 5500.00, FALSE, TRUE),
+(3, 'C-102', 2, 1, 'double', 2, 5500.00, FALSE, TRUE),
+(3, 'C-103', 3, 1, 'triple', 3, 4800.00, FALSE, FALSE),
+(3, 'C-201', 1, 2, 'single', 1, 8500.00, TRUE, TRUE),
+(3, 'C-202', 2, 2, 'double', 2, 6500.00, TRUE, TRUE);
 
 -- Delta Hostel (id=4) - Female
-INSERT INTO rooms (hostel_id, room_number, floor, room_type, capacity, rent_amount, has_ac, has_attached_bathroom) VALUES
-(4, 'D-101', 1, 'double', 2, 5000.00, FALSE, FALSE),
-(4, 'D-102', 1, 'double', 2, 5000.00, FALSE, FALSE),
-(4, 'D-201', 2, 'triple', 3, 4500.00, FALSE, FALSE),
-(4, 'D-202', 2, 'double', 2, 6000.00, TRUE, FALSE);
+INSERT INTO rooms (hostel_id, room_number, room_sequence, floor, room_type, capacity, rent_amount, has_ac, has_attached_bathroom) VALUES
+(4, 'D-101', 1, 1, 'double', 2, 5000.00, FALSE, FALSE),
+(4, 'D-102', 2, 1, 'double', 2, 5000.00, FALSE, FALSE),
+(4, 'D-201', 1, 2, 'triple', 3, 4500.00, FALSE, FALSE),
+(4, 'D-202', 2, 2, 'double', 2, 6000.00, TRUE, FALSE);
 
 -- STUDENTS
 INSERT INTO students (registration_number, first_name, last_name, email, phone, gender, date_of_birth, address, guardian_name, guardian_phone, department, year_of_study) VALUES

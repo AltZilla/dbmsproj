@@ -52,15 +52,15 @@ SELECT
     h.id as hostel_id,
     h.name as hostel_name,
     h.warden_name,
-    h.total_rooms,
+    COUNT(DISTINCT r.id) as total_rooms,
     COALESCE(SUM(r.capacity), 0) as total_capacity,
     COALESCE(SUM(r.current_occupancy), 0) as total_occupancy,
     COALESCE(COUNT(DISTINCT c.id), 0) as total_complaints,
     COALESCE(COUNT(DISTINCT c.id) FILTER (WHERE c.status = 'open'), 0) as open_complaints,
     COALESCE(COUNT(DISTINCT c.id) FILTER (WHERE c.status IN ('resolved', 'closed')), 0) as resolved_complaints,
     CASE 
-        WHEN h.total_rooms > 0 THEN 
-            ROUND(COUNT(DISTINCT c.id)::DECIMAL / h.total_rooms, 2)
+        WHEN COUNT(DISTINCT r.id) > 0 THEN 
+            ROUND(COUNT(DISTINCT c.id)::DECIMAL / COUNT(DISTINCT r.id), 2)
         ELSE 0 
     END as complaints_per_room,
     CASE 
@@ -71,7 +71,7 @@ SELECT
 FROM hostels h
 LEFT JOIN rooms r ON r.hostel_id = h.id
 LEFT JOIN complaints c ON c.room_id = r.id
-GROUP BY h.id, h.name, h.warden_name, h.total_rooms
+GROUP BY h.id, h.name, h.warden_name
 ORDER BY total_complaints DESC;
 
 COMMENT ON VIEW hostel_complaint_summary IS 

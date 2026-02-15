@@ -145,8 +145,9 @@ CREATE TRIGGER trg_log_complaint_creation
 
 
 -- TRIGGER 3: AUTO-GENERATE ROOM NUMBER
+-- TRIGGER 3: AUTO-GENERATE ROOM NUMBER
 CREATE OR REPLACE FUNCTION generate_room_number_format()
-RETURNS TRIGGER AS c:\Users\lsuni\OneDrive\Desktop\Github Projects\dbmsproj\database
+RETURNS TRIGGER AS $$
 DECLARE
     v_hostel_char VARCHAR(1);
 BEGIN
@@ -161,7 +162,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-c:\Users\lsuni\OneDrive\Desktop\Github Projects\dbmsproj\database LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_generate_room_number ON rooms;
 CREATE TRIGGER trg_generate_room_number

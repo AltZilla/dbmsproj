@@ -13,18 +13,28 @@ const corsHeaders = {
 };
 
 export function middleware(request: NextRequest) {
+    // Get the origin from the request
+    const origin = request.headers.get('origin') || '*';
+
     // Handle preflight OPTIONS request
     if (request.method === 'OPTIONS') {
         return new NextResponse(null, {
             status: 200,
-            headers: corsHeaders,
+            headers: {
+                ...corsHeaders,
+                'Access-Control-Allow-Origin': origin,
+            },
         });
     }
 
     // For all other requests, add CORS headers to the response
     const response = NextResponse.next();
     Object.entries(corsHeaders).forEach(([key, value]) => {
-        response.headers.set(key, value);
+        if (key === 'Access-Control-Allow-Origin') {
+            response.headers.set(key, origin);
+        } else {
+            response.headers.set(key, value);
+        }
     });
 
     return response;
