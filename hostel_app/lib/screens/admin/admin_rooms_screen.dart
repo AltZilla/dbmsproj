@@ -58,6 +58,7 @@ class _AdminRoomsScreenState extends State<AdminRoomsScreen>
   }
 
   Future<void> _fetchRooms() async {
+    if (!mounted) return;
     setState(() => _loading = true);
     try {
       if (_tabController.index == 0) {

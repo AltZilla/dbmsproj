@@ -113,35 +113,41 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+    const { getClient } = await import('@/lib/db');
+    const client = await getClient();
+
     try {
         const body = await request.json();
         const { student_id, room_id, expected_checkout, notes } = body;
 
         if (!student_id || !room_id) {
+            client.release();
             return NextResponse.json(
                 { success: false, error: 'Missing required fields: student_id, room_id' },
                 { status: 400 }
             );
         }
 
-        const studentCheck = await query(
+        const studentCheck = await client.query(
             'SELECT id, gender FROM students WHERE id = $1 AND is_active = TRUE',
             [student_id]
         );
         if (studentCheck.rows.length === 0) {
+            client.release();
             return NextResponse.json(
                 { success: false, error: 'Student not found or is not active' },
                 { status: 400 }
             );
         }
 
-        const roomCheck = await query<{
+        const roomCheck = await client.query<{
             id: number;
             capacity: number;
             current_occupancy: number;
             gender_allowed: string;
+            rent_amount: number;
         }>(
-            `SELECT r.id, r.capacity, r.current_occupancy, h.gender_allowed 
+            `SELECT r.id, r.capacity, r.current_occupancy, r.rent_amount, h.gender_allowed 
              FROM rooms r
              INNER JOIN hostels h ON r.hostel_id = h.id
              WHERE r.id = $1 AND r.is_available = TRUE`,
@@ -149,6 +155,7 @@ export async function POST(request: NextRequest) {
         );
 
         if (roomCheck.rows.length === 0) {
+            client.release();
             return NextResponse.json(
                 { success: false, error: 'Room not found or not available' },
                 { status: 400 }
@@ -157,6 +164,7 @@ export async function POST(request: NextRequest) {
 
         const room = roomCheck.rows[0];
         if (room.current_occupancy >= room.capacity) {
+            client.release();
             return NextResponse.json(
                 { success: false, error: 'Room is at full capacity' },
                 { status: 400 }
@@ -166,21 +174,24 @@ export async function POST(request: NextRequest) {
         // Check gender compatibility
         const student = studentCheck.rows[0] as { id: number; gender: string };
         if (room.gender_allowed !== 'other' && student.gender !== room.gender_allowed) {
+            client.release();
             return NextResponse.json(
                 { success: false, error: `Room is for ${room.gender_allowed} students only` },
                 { status: 400 }
             );
         }
 
+        await client.query('BEGIN');
+
         // Check if student already has an active allocation
-        const existingAllocation = await query(
+        const existingAllocation = await client.query(
             'SELECT id FROM allocations WHERE student_id = $1 AND is_active = TRUE',
             [student_id]
         );
 
         if (existingAllocation.rows.length > 0) {
             // Deactivate existing allocation
-            await query(
+            await client.query(
                 `UPDATE allocations 
                  SET is_active = FALSE, actual_checkout = CURRENT_DATE 
                  WHERE student_id = $1 AND is_active = TRUE`,
@@ -190,7 +201,7 @@ export async function POST(request: NextRequest) {
 
         // Create the allocation
         // NOTE: Room occupancy is automatically updated by the database trigger 'trg_check_room_capacity'
-        const result = await query<Allocation>(
+        const result = await client.query<Allocation>(
             `INSERT INTO allocations (
               student_id, room_id, allocation_date, expected_checkout, notes, is_active
             ) VALUES ($1, $2, CURRENT_DATE, $3, $4, TRUE)
@@ -198,15 +209,48 @@ export async function POST(request: NextRequest) {
             [student_id, room_id, expected_checkout || null, notes || null]
         );
 
+        const allocation = result.rows[0];
+
+        // Auto-create a pending payment for the room fee
+        if (room.rent_amount > 0) {
+            const now = new Date();
+            const month = now.getMonth(); // 0-indexed
+            const year = now.getFullYear();
+            const semester = month < 6 ? `Spring ${year}` : `Fall ${year}`;
+            // Due date: 30 days from today
+            const dueDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+            const dueDateStr = dueDate.toISOString().split('T')[0];
+
+            await client.query(
+                `INSERT INTO payments (
+                  student_id, allocation_id, amount, due_date,
+                  payment_status, semester, notes
+                ) VALUES ($1, $2, $3, $4, 'pending', $5, $6)`,
+                [
+                    student_id,
+                    allocation.id,
+                    room.rent_amount,
+                    dueDateStr,
+                    semester,
+                    'Room fee — auto-generated on allocation',
+                ]
+            );
+        }
+
+        await client.query('COMMIT');
+
         return NextResponse.json(
-            { success: true, data: result.rows[0], message: 'Allocation created successfully' },
+            { success: true, data: allocation, message: 'Allocation created successfully' },
             { status: 201 }
         );
     } catch (error) {
+        await client.query('ROLLBACK');
         console.error('Allocations API error:', error);
         return NextResponse.json(
             { success: false, error: error instanceof Error ? error.message : 'Internal server error' },
             { status: 500 }
         );
+    } finally {
+        client.release();
     }
 }

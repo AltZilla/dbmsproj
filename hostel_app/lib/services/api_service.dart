@@ -307,6 +307,10 @@ class ApiService {
     return await _delete('/api/allocations/$id');
   }
 
+  Future<Map<String, dynamic>> autoAllocate() async {
+    return await _post('/api/allocations/auto-allocate', {});
+  }
+
   // ============ ROOMS API ============
 
   Future<List<RoomDetails>> getRooms({
