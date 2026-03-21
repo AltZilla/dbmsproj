@@ -4,7 +4,8 @@
  * Get complaint statistics by category.
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getAnalyticsDateFilter, getAnalyticsRangeMeta } from '@/lib/analytics';
 import { query } from '@/lib/db';
 import { ApiResponse } from '@/lib/types';
 
@@ -20,8 +21,11 @@ interface CategoryStats {
 /**
  * GET /api/analytics/categories
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
+        const range = getAnalyticsRangeMeta(request.nextUrl.searchParams);
+        const dateFilter = getAnalyticsDateFilter('created_at', range.interval);
+
         const result = await query(`
             SELECT 
                 category,
@@ -32,6 +36,7 @@ export async function GET() {
                     EXTRACT(EPOCH FROM (resolved_at - created_at)) / 3600
                 ) FILTER (WHERE resolved_at IS NOT NULL) as avg_resolution_hours
             FROM complaints
+            WHERE ${dateFilter}
             GROUP BY category
             ORDER BY total_complaints DESC
         `);

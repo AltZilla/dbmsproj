@@ -5,11 +5,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getAnalyticsDateFilter, getAnalyticsRangeMeta } from '@/lib/analytics';
 import { query } from '@/lib/db';
 import { ApiResponse } from '@/lib/types';
 
 interface MonthlyTrend {
-    month: string;
+    period_start: string;
+    label: string;
     total_complaints: number;
     resolution_rate: number;
 }
@@ -19,16 +21,24 @@ interface MonthlyTrend {
  */
 export async function GET(request: NextRequest) {
     try {
-        const searchParams = request.nextUrl.searchParams;
-        const months = parseInt(searchParams.get('months') || '6');
+        const range = getAnalyticsRangeMeta(request.nextUrl.searchParams);
+        const bucketExpression = `DATE_TRUNC('${range.bucket}', created_at)`;
+        const labelExpression = range.bucket === 'day'
+            ? `TO_CHAR(${bucketExpression}, 'Mon DD')`
+            : range.bucket === 'week'
+                ? `'Week of ' || TO_CHAR(${bucketExpression}, 'Mon DD')`
+                : `TO_CHAR(${bucketExpression}, 'Mon YY')`;
+        const dateFilter = getAnalyticsDateFilter('created_at', range.interval);
 
         const result = await query<{
-            month: string;
+            period_start: string;
+            label: string;
             total_complaints: string;
             resolution_rate: string;
         }>(`
             SELECT 
-                TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM-01') as month,
+                TO_CHAR(${bucketExpression}, 'YYYY-MM-DD') as period_start,
+                ${labelExpression} as label,
                 COUNT(*) as total_complaints,
                 CASE 
                     WHEN COUNT(*) > 0 
@@ -36,15 +46,16 @@ export async function GET(request: NextRequest) {
                     ELSE 0 
                 END as resolution_rate
             FROM complaints
-            WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month' * $1)
-            GROUP BY DATE_TRUNC('month', created_at)
-            ORDER BY DATE_TRUNC('month', created_at)
-        `, [months]);
+            WHERE ${dateFilter}
+            GROUP BY ${bucketExpression}
+            ORDER BY ${bucketExpression}
+        `);
 
         return NextResponse.json<ApiResponse<MonthlyTrend[]>>({
             success: true,
             data: result.rows.map(row => ({
-                month: row.month,
+                period_start: row.period_start,
+                label: row.label,
                 total_complaints: parseInt(row.total_complaints),
                 resolution_rate: parseFloat(row.resolution_rate)
             }))
