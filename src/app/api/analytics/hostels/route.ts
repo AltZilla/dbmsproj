@@ -4,9 +4,9 @@
  * Get hostel occupancy and complaint statistics.
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getAnalyticsDateFilter, getAnalyticsRangeMeta } from '@/lib/analytics';
 import { query } from '@/lib/db';
-import { ApiResponse } from '@/lib/types';
 
 interface HostelStats {
     hostel_id: number;
@@ -25,8 +25,11 @@ interface HostelStats {
 /**
  * GET /api/analytics/hostels
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
+        const range = getAnalyticsRangeMeta(request.nextUrl.searchParams);
+        const complaintDateFilter = `AND ${getAnalyticsDateFilter('c.created_at', range.interval)}`;
+
         const result = await query<HostelStats>(`
             SELECT 
                 h.id as hostel_id,
@@ -44,18 +47,21 @@ export async function GET() {
                     FROM complaints c 
                     INNER JOIN rooms cr ON c.room_id = cr.id 
                     WHERE cr.hostel_id = h.id
+                    ${complaintDateFilter}
                 ), 0) as total_complaints,
                 COALESCE((
                     SELECT COUNT(*) 
                     FROM complaints c 
                     INNER JOIN rooms cr ON c.room_id = cr.id 
                     WHERE cr.hostel_id = h.id AND c.status IN ('open', 'assigned', 'in_progress')
+                    ${complaintDateFilter}
                 ), 0) as open_complaints,
                 COALESCE((
                     SELECT COUNT(*) 
                     FROM complaints c 
                     INNER JOIN rooms cr ON c.room_id = cr.id 
                     WHERE cr.hostel_id = h.id AND c.status IN ('resolved', 'closed')
+                    ${complaintDateFilter}
                 ), 0) as resolved_complaints
             FROM hostels h
             LEFT JOIN rooms r ON r.hostel_id = h.id

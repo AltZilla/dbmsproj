@@ -5,26 +5,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getAnalyticsDateFilter, getAnalyticsRangeMeta } from '@/lib/analytics';
 import { query } from '@/lib/db';
-import { ApiResponse } from '@/lib/types';
-
-interface ResolutionStats {
-    total_complaints: number;
-    resolved_complaints: number;
-    avg_resolution_hours: number | null;
-    min_resolution_hours: number | null;
-    max_resolution_hours: number | null;
-    by_category: {
-        category: string;
-        avg_hours: number | null;
-        count: number;
-    }[];
-    by_priority: {
-        priority: number;
-        avg_hours: number | null;
-        count: number;
-    }[];
-}
 
 /**
  * GET /api/analytics/resolution
@@ -33,13 +15,14 @@ export async function GET(request: NextRequest) {
     try {
         const searchParams = request.nextUrl.searchParams;
         const hostelId = searchParams.get('hostel_id');
-        const days = parseInt(searchParams.get('days') || '30');
+        const range = getAnalyticsRangeMeta(searchParams, '1m');
 
         let hostelFilter = '';
-        const params: (string | number)[] = [days];
+        const dateFilter = getAnalyticsDateFilter('c.created_at', range.interval);
+        const params: (string | number)[] = [];
 
         if (hostelId) {
-            hostelFilter = `AND r.hostel_id = $2`;
+            hostelFilter = 'AND r.hostel_id = $1';
             params.push(parseInt(hostelId));
         }
 
@@ -62,7 +45,7 @@ export async function GET(request: NextRequest) {
                     FILTER (WHERE c.resolved_at IS NOT NULL) as max_resolution_hours
             FROM complaints c
             INNER JOIN rooms r ON c.room_id = r.id
-            WHERE c.created_at >= CURRENT_DATE - INTERVAL '1 day' * $1
+            WHERE ${dateFilter}
             ${hostelFilter}
         `, params);
 
@@ -79,29 +62,10 @@ export async function GET(request: NextRequest) {
                 COUNT(*) FILTER (WHERE c.resolved_at IS NOT NULL) as count
             FROM complaints c
             INNER JOIN rooms r ON c.room_id = r.id
-            WHERE c.created_at >= CURRENT_DATE - INTERVAL '1 day' * $1
+            WHERE ${dateFilter}
             ${hostelFilter}
             GROUP BY c.category
             ORDER BY count DESC
-        `, params);
-
-        // By priority
-        const priorityResult = await query<{
-            priority: number;
-            avg_hours: string | null;
-            count: string;
-        }>(`
-            SELECT 
-                c.priority,
-                AVG(EXTRACT(EPOCH FROM (c.resolved_at - c.created_at)) / 3600) 
-                    FILTER (WHERE c.resolved_at IS NOT NULL) as avg_hours,
-                COUNT(*) FILTER (WHERE c.resolved_at IS NOT NULL) as count
-            FROM complaints c
-            INNER JOIN rooms r ON c.room_id = r.id
-            WHERE c.created_at >= CURRENT_DATE - INTERVAL '1 day' * $1
-            ${hostelFilter}
-            GROUP BY c.priority
-            ORDER BY c.priority ASC
         `, params);
 
         const overall = overallResult.rows[0];

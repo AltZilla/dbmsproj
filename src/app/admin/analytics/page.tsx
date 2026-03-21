@@ -17,9 +17,13 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     PieChart, Pie, Cell, LineChart, Line
 } from 'recharts';
+import { ANALYTICS_RANGE_CONFIG, AnalyticsRangeKey } from '@/lib/analytics';
 
 // Color palette for charts
 const COLORS = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#f97316', '#eab308'];
+const RANGE_OPTIONS = Object.entries(ANALYTICS_RANGE_CONFIG) as Array<
+    [AnalyticsRangeKey, typeof ANALYTICS_RANGE_CONFIG[AnalyticsRangeKey]]
+>;
 
 interface CategoryStats {
     category: string;
@@ -55,26 +59,30 @@ interface ResolutionStats {
 }
 
 interface MonthlyTrend {
-    month: string;
+    period_start: string;
+    label: string;
     total_complaints: number;
     resolution_rate: number;
 }
 
 export default function AnalyticsPage() {
+    const [selectedRange, setSelectedRange] = useState<AnalyticsRangeKey>('6m');
     const [categoryStats, setCategoryStats] = useState<CategoryStats[]>([]);
     const [hostelStats, setHostelStats] = useState<HostelStats[]>([]);
     const [resolutionStats, setResolutionStats] = useState<ResolutionStats | null>(null);
     const [monthlyTrends, setMonthlyTrends] = useState<MonthlyTrend[]>([]);
     const [loading, setLoading] = useState(true);
+    const rangeMeta = ANALYTICS_RANGE_CONFIG[selectedRange];
 
     useEffect(() => {
         async function fetchAnalytics() {
+            setLoading(true);
             try {
                 const [catRes, hostelRes, resRes, trendRes] = await Promise.all([
-                    fetch('/api/analytics/categories'),
-                    fetch('/api/analytics/hostels'),
-                    fetch('/api/analytics/resolution'),
-                    fetch('/api/analytics/trends?months=6')
+                    fetch(`/api/analytics/categories?range=${selectedRange}`),
+                    fetch(`/api/analytics/hostels?range=${selectedRange}`),
+                    fetch(`/api/analytics/resolution?range=${selectedRange}`),
+                    fetch(`/api/analytics/trends?range=${selectedRange}`)
                 ]);
 
                 const catData = await catRes.json();
@@ -87,12 +95,7 @@ export default function AnalyticsPage() {
                 if (hostelData.success && hostelData.data) setHostelStats(hostelData.data);
                 if (resData.success && resData.data) setResolutionStats(resData.data);
                 if (trendData.success && Array.isArray(trendData.data)) {
-                    // Format month labels
-                    const formatted = trendData.data.map((item: MonthlyTrend & { month: string }) => ({
-                        ...item,
-                        month: new Date(item.month).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
-                    }));
-                    setMonthlyTrends(formatted);
+                    setMonthlyTrends(trendData.data);
                 }
             } catch (error) {
                 console.error('Failed to fetch analytics:', error);
@@ -102,7 +105,7 @@ export default function AnalyticsPage() {
         }
 
         fetchAnalytics();
-    }, []);
+    }, [selectedRange]);
 
     function formatCategory(cat: string) {
         return cat.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -122,7 +125,26 @@ export default function AnalyticsPage() {
         <div className="max-w-7xl mx-auto px-6 py-8">
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-indigo-950 mb-1">Maintenance Analytics</h1>
-                <p className="text-gray-500">Insights and reports on hostel maintenance operations</p>
+                <p className="text-gray-500">Insights and reports on hostel maintenance operations for {rangeMeta.description.toLowerCase()}</p>
+            </div>
+
+            <div className="mb-8 flex flex-wrap gap-3">
+                {RANGE_OPTIONS.map(([key, option]) => {
+                    const isActive = key === selectedRange;
+                    return (
+                        <button
+                            key={key}
+                            type="button"
+                            onClick={() => setSelectedRange(key)}
+                            className={`rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${isActive
+                                ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+                                : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-700'
+                                }`}
+                        >
+                            {option.label}
+                        </button>
+                    );
+                })}
             </div>
 
             {/* Summary Stats */}
@@ -166,7 +188,7 @@ export default function AnalyticsPage() {
                     <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
                         <div>
                             <div className="font-semibold text-gray-900">Complaints by Category</div>
-                            <div className="text-xs text-gray-500">Distribution of complaint types</div>
+                            <div className="text-xs text-gray-500">Distribution of complaint types for {rangeMeta.description.toLowerCase()}</div>
                         </div>
                     </div>
                     <div className="min-h-[300px] flex items-center justify-center p-4">
@@ -211,7 +233,7 @@ export default function AnalyticsPage() {
                     <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
                         <div>
                             <div className="font-semibold text-gray-900">Complaints by Hostel</div>
-                            <div className="text-xs text-gray-500">Hostel-wise complaint comparison</div>
+                            <div className="text-xs text-gray-500">Hostel-wise complaint comparison for {rangeMeta.description.toLowerCase()}</div>
                         </div>
                     </div>
                     <div className="min-h-[300px] flex items-center justify-center p-4">
@@ -237,8 +259,8 @@ export default function AnalyticsPage() {
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
                     <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
                         <div>
-                            <div className="font-semibold text-gray-900">Monthly Trend</div>
-                            <div className="text-xs text-gray-500">Complaints over time</div>
+                            <div className="font-semibold text-gray-900">Trend</div>
+                            <div className="text-xs text-gray-500">Complaints over {rangeMeta.description.toLowerCase()}</div>
                         </div>
                     </div>
                     <div className="min-h-[300px] flex items-center justify-center p-4">
@@ -246,7 +268,7 @@ export default function AnalyticsPage() {
                             <ResponsiveContainer width="100%" height={300}>
                                 <LineChart data={monthlyTrends}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                                    <XAxis dataKey="label" tick={{ fontSize: 12 }} />
                                     <YAxis yAxisId="left" />
                                     <YAxis yAxisId="right" orientation="right" domain={[0, 100]} />
                                     <Tooltip />
@@ -282,7 +304,7 @@ export default function AnalyticsPage() {
                     <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
                         <div>
                             <div className="font-semibold text-gray-900">Resolution Time by Category</div>
-                            <div className="text-xs text-gray-500">Average hours to resolve</div>
+                            <div className="text-xs text-gray-500">Average hours to resolve for {rangeMeta.description.toLowerCase()}</div>
                         </div>
                     </div>
                     <div className="min-h-[300px] flex items-center justify-center p-4">
@@ -322,10 +344,10 @@ export default function AnalyticsPage() {
             {/* Category Details Table */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                    <div>
-                        <div className="font-semibold text-gray-900">Category Breakdown</div>
-                        <div className="text-xs text-gray-500">Detailed statistics by complaint category</div>
-                    </div>
+                        <div>
+                            <div className="font-semibold text-gray-900">Category Breakdown</div>
+                            <div className="text-xs text-gray-500">Detailed statistics by complaint category for {rangeMeta.description.toLowerCase()}</div>
+                        </div>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
@@ -359,4 +381,3 @@ export default function AnalyticsPage() {
         </div>
     );
 }
-

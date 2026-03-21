@@ -11,10 +11,19 @@ class AnalyticsScreen extends StatefulWidget {
 }
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
+  static const List<Map<String, String>> _rangeOptions = [
+    {'value': '1w', 'label': '1 Week', 'description': 'last 7 days'},
+    {'value': '1m', 'label': '1 Month', 'description': 'last 30 days'},
+    {'value': '3m', 'label': '3 Months', 'description': 'last 3 months'},
+    {'value': '6m', 'label': '6 Months', 'description': 'last 6 months'},
+    {'value': '1y', 'label': '1 Year', 'description': 'last 12 months'},
+  ];
+
   final ApiService _api = ApiService();
 
   bool _loading = true;
   String? _error;
+  String _selectedRange = '6m';
 
   // Data from API
   List<Map<String, dynamic>> _categoryStats = [];
@@ -37,10 +46,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     try {
       final results = await Future.wait([
-        _api.getRaw('/api/analytics/categories'),
-        _api.getRaw('/api/analytics/hostels'),
-        _api.getRaw('/api/analytics/resolution'),
-        _api.getRaw('/api/analytics/trends?months=6'),
+        _api.getRaw('/api/analytics/categories?range=$_selectedRange'),
+        _api.getRaw('/api/analytics/hostels?range=$_selectedRange'),
+        _api.getRaw('/api/analytics/resolution?range=$_selectedRange'),
+        _api.getRaw('/api/analytics/trends?range=$_selectedRange'),
       ]);
 
       final catData = results[0];
@@ -93,6 +102,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         .join(' ');
   }
 
+  String get _selectedRangeDescription {
+    return _rangeOptions.firstWhere(
+      (option) => option['value'] == _selectedRange,
+      orElse: () => _rangeOptions[3],
+    )['description']!;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -136,6 +152,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       children: [
                         // Header
                         _buildHeader(),
+                        const SizedBox(height: 24),
+
+                        _buildRangeSelector(),
                         const SizedBox(height: 24),
 
                         // Resolution Summary Stats
@@ -229,7 +248,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Live hostel statistics and insights',
+            'Live hostel statistics and insights for $_selectedRangeDescription',
             style: TextStyle(
               color: Colors.white.withOpacity(0.8),
               fontSize: 14,
@@ -237,6 +256,51 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRangeSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Time Range',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: AppTheme.gray800,
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: _rangeOptions.map((option) {
+            final value = option['value']!;
+            final selected = value == _selectedRange;
+
+            return ChoiceChip(
+              label: Text(option['label']!),
+              selected: selected,
+              onSelected: (_) {
+                if (selected) return;
+                setState(() {
+                  _selectedRange = value;
+                });
+                _fetchAnalytics();
+              },
+              selectedColor: AppTheme.primary600,
+              backgroundColor: Colors.white,
+              labelStyle: TextStyle(
+                color: selected ? Colors.white : AppTheme.gray700,
+                fontWeight: FontWeight.w600,
+              ),
+              side: BorderSide(
+                color: selected ? AppTheme.primary600 : AppTheme.gray300,
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
@@ -489,16 +553,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               ),
               const Divider(height: 20),
               ..._monthlyTrends.map((trend) {
-                final monthStr = trend['month'] ?? '';
-                String displayMonth = monthStr;
-                try {
-                  final date = DateTime.parse(monthStr);
-                  final months = [
-                    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-                  ];
-                  displayMonth = '${months[date.month - 1]} ${date.year}';
-                } catch (_) {}
+                final displayMonth =
+                    (trend['label'] ?? trend['period_start'] ?? 'Unknown')
+                        .toString();
 
                 final totalComplaints =
                     ((trend['total_complaints'] ?? 0) as num).toInt();
